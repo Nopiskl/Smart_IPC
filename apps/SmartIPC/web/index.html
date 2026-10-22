@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>SmartIPC · nopiskl 设备管理</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div id="login-view" class="login-view">
+      <div class="login-story">
+        <div class="wordmark">nopiskl<span class="brand-dot"></span></div>
+        <div>
+          <span class="eyebrow">SMART VISION / LOCAL CONTROL</span>
+          <h1>看见现场，<br />掌控每一帧。</h1>
+          <p>SmartIPC 智能摄像终端<br />视频、识别与设备控制，一个入口。</p>
+        </div>
+        <small>RV1106 · YOLOv5 · RTSP</small>
+      </div>
+      <div class="login-panel">
+        <form id="login-form" class="login-form">
+          <span class="eyebrow">DEVICE CONSOLE</span>
+          <h2>登录设备</h2>
+          <p class="muted">使用设备管理员账户访问控制台。</p>
+          <label
+            >用户名<input
+              id="username"
+              name="username"
+              autocomplete="username"
+              value="admin"
+              required
+              maxlength="64" /></label
+          ><label
+            >密码<input
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+              maxlength="128" /></label
+          ><button class="primary" type="submit">
+            登录控制台 <span aria-hidden="true">→</span>
+          </button>
+          <p id="login-error" role="alert" class="error"></p>
+          <p class="login-note">
+            首次使用请在设备终端执行<br /><code>./start.sh --init-password</code> 设置密码。
+          </p>
+        </form>
+      </div>
+    </div>
+    <div id="console-view" class="console hidden">
+      <aside class="sidebar">
+        <div class="wordmark">nopiskl<span class="brand-dot"></span></div>
+        <div class="product-label">SmartIPC <span>CONSOLE</span></div>
+        <nav aria-label="管理导航">
+          <button class="nav-item active" data-page="overview">◈ <span>设备概览</span></button
+          ><button class="nav-item" data-page="video">▣ <span>视频与识别</span></button
+          ><button class="nav-item" data-page="snapshot">▧ <span>截图管理</span></button
+          ><button class="nav-item" data-page="motor">⌘ <span>外部控制</span></button
+          ><button class="nav-item" data-page="account">◎ <span>账户设置</span></button>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="status-dot"></span> 局域网设备管理<br /><small>SmartIPC / v1.0.0</small>
+        </div>
+      </aside>
+      <main>
+        <header>
+          <div>
+            <span class="eyebrow">DEVICE MANAGEMENT</span>
+            <h1 id="page-title">设备概览</h1>
+          </div>
+          <div class="header-actions">
+            <span id="connection" class="badge">正在连接</span><span class="user">admin</span
+            ><button id="logout" class="text-button">退出</button>
+          </div>
+        </header>
+        <div id="simulation-banner" class="banner hidden">
+          主机模拟模式 · 当前没有摄像头、NPU 或 RTSP
+          视频流。截图为生成的测试图，电机模拟状态会单独标注。
+        </div>
+        <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+        <section id="page-overview" class="page">
+          <div class="section-intro">
+            <div>
+              <h2 id="device-name">SmartIPC</h2>
+              <p class="muted">设备运行状态与媒体链路概况</p>
+            </div>
+            <button id="refresh" class="secondary">刷新状态 ↻</button>
+          </div>
+          <div class="metrics">
+            <article class="metric">
+              <span>媒体状态</span><strong id="media-state">—</strong
+              ><small id="media-detail">等待设备响应</small>
+            </article>
+            <article class="metric">
+              <span>实际推流帧率</span><strong><span id="fps">—</span><em> FPS</em></strong
+              ><small>采集、识别与编码后的输出速率</small>
+            </article>
+            <article class="metric">
+              <span>可用内存</span><strong><span id="memory">—</span><em> MiB</em></strong
+              ><small id="memory-detail">从设备 /proc/meminfo 读取</small>
+            </article>
+            <article class="metric">
+              <span>程序运行时长</span><strong id="uptime">—</strong
+              ><small id="frames">已处理 — 帧</small>
+            </article>
+          </div>
+          <div class="two-columns">
+            <article class="card">
+              <div class="card-heading">
+                <h3>设备信息</h3>
+                <span class="badge subtle">SYSTEM</span>
+              </div>
+              <dl class="info-list">
+                <div>
+                  <dt>产品</dt>
+                  <dd>nopiskl SmartIPC</dd>
+                </div>
+                <div>
+                  <dt>程序版本</dt>
+                  <dd id="version">—</dd>
+                </div>
+                <div>
+                  <dt>架构</dt>
+                  <dd id="architecture">—</dd>
+                </div>
+                <div>
+                  <dt>内核</dt>
+                  <dd id="kernel">—</dd>
+                </div>
+                <div>
+                  <dt>网络接口</dt>
+                  <dd id="interfaces">—</dd>
+                </div>
+              </dl>
+            </article>
+            <article class="card">
+              <div class="card-heading">
+                <h3>视频链路</h3>
+                <span class="badge subtle">MEDIA</span>
+              </div>
+              <div class="pipeline">
+                <span>摄像头</span><i>→</i><span>YOLOv5</span><i>→</i><span>H.264</span>
+              </div>
+              <dl class="info-list">
+                <div>
+                  <dt>当前输出</dt>
+                  <dd id="video-summary">—</dd>
+                </div>
+                <div>
+                  <dt>检测结果</dt>
+                  <dd id="detections">—</dd>
+                </div>
+                <div>
+                  <dt>RTSP 地址</dt>
+                  <dd><code id="rtsp-url">—</code></dd>
+                </div>
+                <div>
+                  <dt>最近错误</dt>
+                  <dd id="media-error">—</dd>
+                </div>
+              </dl>
+              <p class="hint">使用 VLC 等客户端打开 RTSP 地址。管理页面提供按需截图预览。</p>
+            </article>
+          </div>
+          <article class="card">
+            <div class="card-heading">
+              <h3>最近操作</h3>
+              <span class="muted">当前浏览器会话</span>
+            </div>
+            <ul id="activity" class="activity">
+              <li>登录后，操作记录将显示在这里。</li>
+            </ul>
+          </article>
+        </section>
+        <section id="page-video" class="page hidden">
+          <div class="section-intro">
+            <div>
+              <h2>视频与智能识别</h2>
+              <p class="muted">配置保存后以设备返回的执行结果为准。</p>
+            </div>
+          </div>
+          <div class="two-columns">
+            <form id="video-form" class="card">
+              <div class="card-heading">
+                <h3>视频编码</h3>
+                <span class="badge subtle">H.264</span>
+              </div>
+              <div class="form-grid">
+                <label
+                  >宽度 / px<input
+                    name="width"
+                    type="number"
+                    min="320"
+                    max="1920"
+                    step="16"
+                    required /></label
+                ><label
+                  >高度 / px<input
+                    name="height"
+                    type="number"
+                    min="240"
+                    max="1080"
+                    step="2"
+                    required /></label
+                ><label
+                  >目标帧率 / FPS<input name="fps" type="number" min="1" max="30" required /></label
+                ><label
+                  >码率 / kbps<input
+                    name="bitrate_kbps"
+                    type="number"
+                    min="128"
+                    max="16384"
+                    required /></label
+                ><label>GOP / 帧<input name="gop" type="number" min="1" max="300" required /></label
+                ><label
+                  >编码格式<select name="codec">
+                    <option value="h264">H.264 / AVC</option>
+                  </select></label
+                >
+              </div>
+              <p class="hint">
+                宽度须为 16 的倍数。修改视频参数会重建媒体通道，RTSP
+                客户端需要重新连接。可用分辨率受传感器和 CMA 资源限制。
+              </p>
+              <button type="submit" class="primary">应用视频配置</button>
+            </form>
+            <form id="ai-form" class="card">
+              <div class="card-heading">
+                <h3>YOLOv5 目标检测</h3>
+                <span class="badge subtle">NPU</span>
+              </div>
+              <label class="switch-row"
+                ><span>启用目标检测</span><input name="enabled" type="checkbox" /></label
+              ><label class="switch-row"
+                ><span>视频叠加检测框与类别</span><input name="overlay" type="checkbox"
+              /></label>
+              <div class="form-grid">
+                <label
+                  >置信度阈值<input
+                    name="confidence"
+                    type="number"
+                    min="0.01"
+                    max="0.99"
+                    step="0.01"
+                    required /></label
+                ><label
+                  >NMS 阈值<input
+                    name="nms"
+                    type="number"
+                    min="0.01"
+                    max="0.99"
+                    step="0.01"
+                    required
+                /></label>
+              </div>
+              <p class="hint">阈值范围为 0 到 1 之间。启用检测后的实际帧率取决于模型推理耗时。</p>
+              <p class="hint">模型：<code id="model-path">—</code></p>
+              <button type="submit" class="primary">应用识别配置</button>
+            </form>
+          </div>
+        </section>
+        <section id="page-snapshot" class="page hidden">
+          <div class="section-intro">
+            <div>
+              <h2>截图管理</h2>
+              <p class="muted">按需抓取当前画面，设备仅缓存最近一张截图。</p>
+            </div>
+            <button id="capture" class="primary">＋ 拍摄截图</button>
+          </div>
+          <div class="snapshot-layout">
+            <article class="card preview-card">
+              <div class="card-heading">
+                <h3>截图预览</h3>
+                <a id="download" class="text-button hidden" download="SmartIPC-snapshot"
+                  >下载图片 ↓</a
+                >
+              </div>
+              <div id="preview-empty" class="preview-empty">
+                <span>▧</span>
+                <h3>获取设备当前画面</h3>
+                <p>点击“拍摄截图”生成预览</p>
+              </div>
+              <img id="preview" class="snapshot-image hidden" alt="SmartIPC 最近一次截图" />
+              <p id="snapshot-meta" class="hint">截图尚未生成</p>
+            </article>
+            <form id="snapshot-form" class="card">
+              <h3>截图配置</h3>
+              <label
+                >图片格式<select name="format">
+                  <option value="jpeg">JPEG</option>
+                  <option value="bmp">BMP</option>
+                </select></label
+              ><label
+                >JPEG 质量<input name="quality" type="number" min="1" max="100" required /></label
+              ><label class="switch-row"
+                ><span>叠加检测框与类别</span><input name="overlay" type="checkbox"
+              /></label>
+              <p id="snapshot-format-hint" class="hint">
+                截图使用当前视频分辨率。质量仅对 JPEG 生效，BMP 为未压缩图像。
+              </p>
+              <button type="submit" class="primary">保存截图配置</button>
+            </form>
+          </div>
+        </section>
+        <section id="page-motor" class="page hidden">
+          <div class="section-intro">
+            <div>
+              <h2>外部控制</h2>
+              <p class="muted">通过统一控制接口连接后续电机驱动。</p>
+            </div>
+            <span id="motor-badge" class="badge">未接入</span>
+          </div>
+          <div class="two-columns">
+            <article class="card">
+              <h3>电机控制</h3>
+              <p id="motor-description" class="hint">正在读取后端能力。</p>
+              <form id="motor-form">
+                <div class="form-grid">
+                  <label
+                    >轴<select name="axis">
+                      <option value="pan">水平 / pan</option>
+                      <option value="tilt">俯仰 / tilt</option>
+                    </select></label
+                  ><label
+                    >方向<select name="direction">
+                      <option value="1">正向 / +1</option>
+                      <option value="-1">反向 / -1</option>
+                    </select></label
+                  ><label
+                    >归一化速度<input
+                      name="speed"
+                      type="number"
+                      min="0.01"
+                      max="1"
+                      step="0.01"
+                      value="0.3"
+                      required /></label
+                  ><label
+                    >持续时间 / ms<input
+                      name="duration_ms"
+                      type="number"
+                      min="1"
+                      max="5000"
+                      value="500"
+                      required
+                  /></label>
+                </div>
+                <div class="button-row">
+                  <button id="motor-move" class="primary" type="submit" disabled>执行移动</button
+                  ><button id="motor-stop" class="danger" type="button" disabled>停止运动</button>
+                </div>
+              </form>
+            </article>
+            <article class="card">
+              <h3>接口与状态</h3>
+              <dl class="info-list">
+                <div>
+                  <dt>控制后端</dt>
+                  <dd id="motor-backend">—</dd>
+                </div>
+                <div>
+                  <dt>运动状态</dt>
+                  <dd id="motor-moving">—</dd>
+                </div>
+                <div>
+                  <dt>命令接口</dt>
+                  <dd><code>POST /api/v1/motor/commands</code></dd>
+                </div>
+              </dl>
+              <p class="hint">
+                具体驱动通过 Motor 接口接入。角度定位、限位和回零能力需要由后续硬件后端声明。
+              </p>
+            </article>
+          </div>
+        </section>
+        <section id="page-account" class="page hidden">
+          <div class="section-intro">
+            <div>
+              <h2>账户设置</h2>
+              <p class="muted">修改密码后，所有管理会话都需要重新登录。</p>
+            </div>
+          </div>
+          <form id="password-form" class="card narrow">
+            <h3>修改管理员密码</h3>
+            <label
+              >当前密码<input
+                type="password"
+                name="current_password"
+                autocomplete="current-password"
+                required
+                maxlength="128" /></label
+            ><label
+              >新密码<input
+                type="password"
+                name="new_password"
+                autocomplete="new-password"
+                required
+                minlength="10"
+                maxlength="128" /></label
+            ><label
+              >确认新密码<input
+                type="password"
+                name="confirm_password"
+                autocomplete="new-password"
+                required
+                minlength="10"
+                maxlength="128"
+            /></label>
+            <p class="hint">密码长度为 10 至 128 字节。</p>
+            <button class="primary" type="submit">更新密码</button>
+          </form>
+        </section>
+        <footer>nopiskl SmartIPC <span>本地视觉 · 开放控制</span></footer>
+      </main>
+    </div>
+  </body>
+</html>

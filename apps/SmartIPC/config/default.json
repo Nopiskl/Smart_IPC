@@ -1,0 +1,15 @@
+{
+  "device_name": "nopiskl SmartIPC",
+  "http": { "bind": "0.0.0.0", "port": 8080 },
+  "video": {
+    "codec": "h264", "width": 720, "height": 480, "fps": 25,
+    "bitrate_kbps": 3072, "gop": 50,
+    "rtsp_port": 554, "rtsp_path": "/live/0"
+  },
+  "ai": {
+    "enabled": true, "overlay": true, "confidence": 0.25, "nms": 0.45,
+    "model_path": "./models/yolov5/yolov5.rknn",
+    "labels_path": "./models/yolov5/coco_80_labels_list.txt"
+  },
+  "snapshot": { "format": "jpeg", "quality": 85, "overlay": true }
+}

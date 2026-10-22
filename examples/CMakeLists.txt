@@ -1,0 +1,7 @@
+# 示例的命令行循环属于 examples，不再放入公共媒体模块。
+add_library(nopiskl_example_runner common/example_runner.cpp)
+target_include_directories(nopiskl_example_runner PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/common")
+target_link_libraries(nopiskl_example_runner PRIVATE nopiskl_media nopiskl_config)
+nopiskl_enable_warnings(nopiskl_example_runner)
+add_subdirectory(nopiskl_rtsp_opencv)
+add_subdirectory(nopiskl_rtsp_opencv_capture)

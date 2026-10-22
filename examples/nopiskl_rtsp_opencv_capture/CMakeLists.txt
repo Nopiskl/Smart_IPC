@@ -1,0 +1,4 @@
+add_executable(nopiskl_rtsp_opencv_capture main.cpp)
+target_link_libraries(nopiskl_rtsp_opencv_capture PRIVATE nopiskl_example_runner)
+nopiskl_enable_warnings(nopiskl_rtsp_opencv_capture)
+install(TARGETS nopiskl_rtsp_opencv_capture RUNTIME DESTINATION . OPTIONAL)
