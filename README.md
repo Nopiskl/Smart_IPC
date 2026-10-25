@@ -1,59 +1,99 @@
 # nopiskl Video / SmartIPC
 
-基于 RV1106、Rockchip MPI、RKNN 和 OpenCV-Mobile 的嵌入式视频工程。主应用 **SmartIPC** 提供 YOLOv5 目标检测、检测结果叠加、H.264 RTSP 推流、设备管理页面、配置保存、按需截图和外部控制 API。
+**面向 RV1106 的智能摄像头项目，集成目标检测、视频推流和浏览器设备管理。**
 
-本目录从 `../Video_examples/` 独立整理而来，原目录保持独立。项目维护名称为 nopiskl，第三方来源见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+SmartIPC 使用摄像头采集画面，通过 RKNN 运行 YOLOv5 检测，并将带有检测结果的视频编码为 H.264，通过 RTSP 输出。在电脑或手机浏览器中，可以查看设备状态、调整视频与识别参数、拍摄和下载截图；外部程序也可以通过 HTTP API 完成这些操作。
 
-## 应用入口
+项目基于 Luckfox 的视频示例扩展，新增了管理页面、账号登录、配置保存、截图管理和设备控制入口，并提供无需开发板即可体验管理流程的主机模拟模式。仓库同时保留两个基础视频示例，方便从采集与推流开始学习。
 
-| 目标 | 功能 |
+[功能概览](#功能概览) · [效果预览](#效果预览) · [快速上手](#快速上手) · [项目组成](#项目组成) · [详细文档](#详细文档)
+
+## 功能概览
+
+| 能力 | 说明 |
 | --- | --- |
-| `SmartIPC` | 检测、推流、管理页面、HTTP API、截图及电机扩展入口 |
-| `nopiskl_rtsp_opencv` | MPI 采集、OpenCV FPS 叠加、硬件编码和 RTSP |
-| `nopiskl_rtsp_opencv_capture` | OpenCV VideoCapture 采集、FPS 叠加、编码和 RTSP |
+| 视频采集与推流 | 基于 Rockchip MPI 和 OpenCV-Mobile 处理图像，硬件编码 H.264，使用 VLC 等 RTSP 客户端观看 |
+| YOLOv5 目标检测 | 使用随包的 COCO 80 类模型，支持检测开关、置信度与 NMS 阈值调整、检测框叠加 |
+| 浏览器管理 | 查看设备信息、媒体状态、帧率、内存与运行时长，适配桌面和手机屏幕 |
+| 参数配置 | 调整分辨率、目标帧率、码率、GOP 等参数，保存已生效配置供下次启动使用 |
+| 截图管理 | 按需拍摄、预览和下载最新截图；板端支持 JPEG/BMP，可配置质量与检测结果叠加 |
+| 账号与外部接口 | 提供管理员登录、密码修改和 HTTP API，可由外部程序查询状态、提交操作并获取结果 |
+| 控制扩展与主机模拟 | 提供电机命令接口和模拟后端，可在 Linux 主机联调页面与控制流程；物理电机驱动待接入 |
 
-两个 RetinaFace 示例及其模型、构建入口已从本工程移除。基础示例与 SmartIPC 共享媒体实现，三者分别运行，避免同时占用摄像头。
+实时视频通过 RTSP 客户端观看，管理页面提供按需截图预览。视频参数的可用范围和实际帧率取决于传感器、固件与处理负载。
 
-## 快速编译
+## 效果预览
 
-需要 Linux、CMake 3.16+、make 和对应 ARM hard-float 工具链。第三方源码及目标库已经包含，构建不需要下载依赖。
+### 设备概览
+
+集中查看设备运行状态、资源占用和视频输出信息。以下管理页面截图均来自本项目的主机模拟模式；截图中的状态数值与测试图用于展示界面。
+
+![SmartIPC 设备概览：设备信息、运行状态与视频链路](docs/previews/overview.png)
+
+### 登录与截图管理
+
+<table>
+  <tr>
+    <th width="50%">管理员登录</th>
+    <th width="50%">截图预览与下载</th>
+  </tr>
+  <tr>
+    <td><a href="docs/previews/login.png"><img src="docs/previews/login.png" alt="SmartIPC 管理员登录页面" width="100%"></a></td>
+    <td><a href="docs/previews/snapshot.png"><img src="docs/previews/snapshot.png" alt="SmartIPC 截图管理页面，展示主机生成的 BMP 测试图" width="100%"></a></td>
+  </tr>
+</table>
+
+首次运行时在设备终端设置管理员密码。登录后可拍摄当前画面、调整截图选项并下载图片；设备仅缓存最新一张截图。
+
+### 手机端访问
+
+同一套管理页面适配手机屏幕，可在局域网中查看设备状态和操作入口。
+
+<p align="center">
+  <a href="docs/previews/mobile.png"><img src="docs/previews/mobile.png" alt="SmartIPC 手机端设备概览" width="320"></a>
+</p>
+
+### YOLOv5 检测示例
+
+下图来自原 Luckfox 参考项目，展示目标类别、置信度和检测框叠加效果。图中的帧率属于原示例画面，SmartIPC 当前版本的板端效果与性能仍需实机验证。
+
+<p align="center">
+  <a href="docs/previews/luckfox_pico_rtsp_yolov5.jpg"><img src="docs/previews/luckfox_pico_rtsp_yolov5.jpg" alt="Luckfox 原示例的 YOLOv5 检测画面，识别键盘与鼠标" width="640"></a>
+</p>
+
+图片来源：`Video_examples/luckfox_pico_rkmpi_example/images/luckfox_pico_rtsp_yolov5.jpg`；已复制到本仓库供文档展示，来源说明见 [第三方说明](THIRD_PARTY_NOTICES.md)。
+
+## 快速上手
+
+### 在 RV1106 开发板上运行
+
+准备 Linux 构建环境、CMake 3.16+、make 和与固件匹配的 ARM 工具链。以下以 uclibc 为例，在项目根目录执行；将 SDK 路径替换为本机实际位置：
 
 ```bash
-export NOPISKL_SDK_PATH=/home/alientek/RV1106/SDK/luckfox-pico
-./build.sh --target all --libc uclibc --jobs 2
+export NOPISKL_SDK_PATH=/path/to/luckfox-pico
+./build.sh --target SmartIPC --libc uclibc --jobs 2
 ```
 
-产物位于 `dist/uclibc/`。仅构建主应用可使用 `--target SmartIPC`。
-
-```bash
-# glibc 需要另外准备与板端 ABI 匹配的工具链
-export NOPISKL_GLIBC_PREFIX=/opt/arm/bin/arm-linux-gnueabihf-
-./build.sh --target all --libc glibc
-```
-
-## 板端运行
-
-将完整部署目录复制到设备的可写分区，例如 `/userdata/SmartIPC`。先停止正在占用摄像头、ISP、编码器或 554 端口的原 IPC 服务。原系统通常提供 `RkLunch-stop.sh`，具体以板端固件为准。
+将生成的 `dist/uclibc/` 完整目录复制到设备，例如 `/userdata/SmartIPC`。确认传感器和 IQ 文件配置正确，并停止占用摄像头及 RTSP 端口的原服务，然后执行：
 
 ```sh
 cd /userdata/SmartIPC
-# 首次运行，在终端交互设置密码；用户名为 admin
 ./start.sh --init-password
 ./start.sh
 ```
 
-浏览器访问 `http://<设备IP>:8080/`。使用 VLC 打开 `rtsp://<设备IP>:554/live/0`。管理页面显示设备真实状态，默认视频为 720×480、25 目标 FPS、3072 kbps。检测耗时会影响实际帧率，支持范围内的具体视频配置仍需上板验证。
+首次设置密码至少需要 10 字节，登录用户名为 `admin`。启动后使用：
 
-初始化密码至少 10 字节。密码通过终端/stdin 读取，保存为加盐 Argon2id 哈希；没有统一默认密码。配置保存至 `data/config.json`，凭据保存至 `data/auth.json`，文件权限为 0600。建议将整个部署包置于可信用户拥有的目录。
+| 入口 | 地址 |
+| --- | --- |
+| 浏览器管理页面 | `http://<设备IP>:8080/` |
+| VLC 等客户端观看视频 | `rtsp://<设备IP>:554/live/0` |
 
-基础示例使用同一个部署包：
+默认视频配置为 720×480、25 目标 FPS、3072 kbps，可在管理页面调整。glibc 工具链、配置保存和部署访问说明见 [构建与部署](docs/build_and_deploy.md)。
 
-```sh
-LD_LIBRARY_PATH=./lib ./nopiskl_rtsp_opencv --config ./config/default.json
-LD_LIBRARY_PATH=./lib ./nopiskl_rtsp_opencv_capture --config ./config/default.json
-```
+### 没有开发板时体验管理页面
 
-## 主机联调
+在 Linux 主机的项目根目录执行：
 
 ```bash
 ./build.sh --host --jobs 2
@@ -62,51 +102,40 @@ cd dist/host
 ./start.sh --simulate-motor
 ```
 
-主机版本明确标记模拟媒体，不调用摄像头、不执行 NPU 推理、不提供 RTSP；截图返回生成的 BMP 测试图。电机默认禁用，只有显式传入 `--simulate-motor` 才启用模拟控制。ARM 版本也可用该参数单独联调电机接口。
+浏览器访问 `http://localhost:8080/`，即可体验登录、配置修改、截图和模拟电机控制。主机模式生成 BMP 测试图，不使用摄像头、NPU 或 RTSP。
 
-```bash
-# 从工程根目录运行，测试会自行启动并关闭主机版服务
-python3 tests/test_api.py
+已有主机测试与 ARM uclibc 编译检查通过；真实视频链路和连续运行稳定性仍待板端验证，具体见 [验证范围](docs/build_and_deploy.md#验证范围)。
 
-# 后处理逻辑测试（不依赖摄像头）
-cmake --build build/host --target nopiskl_postprocess_test
-(cd build/host && ctest --output-on-failure)
+## 项目组成
 
-# 可选：使用本机 Firefox 验证管理页面，截图写入 docs/previews/
-python3 tests/test_browser.py
-```
+| 程序 | 用途 |
+| --- | --- |
+| `SmartIPC` | 主应用：目标检测、RTSP 推流、浏览器管理、截图及外部控制 |
+| `nopiskl_rtsp_opencv` | 基础示例：MPI 采集、OpenCV 帧率叠加、编码与 RTSP 推流 |
+| `nopiskl_rtsp_opencv_capture` | 基础示例：OpenCV VideoCapture 采集、帧率叠加、编码与 RTSP 推流 |
 
-提交和部署归档可通过 `./scripts/package.sh` 生成，输出位于 `dist/archives/`，包含源码包、已生成的 uclibc 部署包及 SHA-256 校验文件。
-
-## 工程结构
+构建全部程序时使用 `./build.sh --target all --libc uclibc --jobs 2`。三个程序分别运行，避免同时占用摄像头；示例运行命令见 [构建与部署](docs/build_and_deploy.md#基础示例与打包)。
 
 ```text
-apps/SmartIPC/       SmartIPC 应用及其内部模块
-    src/            启动组装、命令行、密码初始化
-    config/         默认配置
-    web/            管理页面静态资源
-    modules/
-        media/      公共媒体接口、板端与主机模拟后端
-        ai/         检测器、模型加载、预处理、推理与 YOLOv5 后处理
-        control/    设备协调、配置事务、有界任务队列、截图缓存、电机后端
-        config/     SmartIPC 配置加载与校验规则
-        web/        登录、会话、鉴权和 API 路由
-        common/     文件操作、时间、随机数与系统信息接口
-examples/           两个简化的视频采集推流示例
-third_party/        平台头文件与库、开源依赖
-models/yolov5/      RKNN 模型及 COCO 标签
-cmake/              公共编译选项、依赖封装、安装规则、ARM 工具链
-docs/               架构、协议、部署及扩展文档
+apps/SmartIPC/    主应用、管理页面、默认配置和功能模块
+examples/        基础视频示例
+models/          YOLOv5 模型与标签
+third_party/     平台依赖和第三方库
+cmake/           构建配置与工具链
+scripts/         启动、打包和开发检查脚本
+tests/           自动化测试
+docs/            架构、部署、接口说明与预览图片
 ```
 
-项目自有 C++ 实现统一使用 `.cpp`，头文件使用 `.h`。功能模块统一放在 `apps/SmartIPC/modules/`，每个模块按 `include/nopiskl/<模块>/`（公开接口）与 `src/`（实现）组织，并拥有自己的 `CMakeLists.txt`。跨模块使用完整包含路径，例如 `#include "nopiskl/web/auth.h"`。主程序入口是 `apps/SmartIPC/src/main.cpp`，服务组装位于同目录 `application.cpp`；模块关系见 [架构](docs/architecture.md)。
+## 详细文档
 
-顶层 CMake 负责依赖、应用、示例、测试和安装的组织；`apps/SmartIPC/CMakeLists.txt` 负责内部模块的构建顺序。两个基础示例通过库目标复用媒体模块，公开头文件的包含方式与构建目标名称保持一致。
+| 文档 | 适合了解的内容 |
+| --- | --- |
+| [架构与运行流程](docs/architecture.md) | 与参考项目的差异、模块职责、线程模型及视频、截图和配置流程图 |
+| [构建与部署](docs/build_and_deploy.md) | 工具链、部署配置、示例运行、开发检查与验证范围 |
+| [HTTP API](docs/api.md) | 登录鉴权、参数配置、任务状态和截图下载 |
+| [电机协议](docs/motor_protocol.md) | 命令含义、模拟控制与物理驱动接入 |
 
-`Control` 对外提供设备操作，内部由配置事务、任务队列和截图缓存组件承担各自职责；截图下载地址在 HTTP 层生成。板端媒体通过 `YoloV5Detector` 传入 BGR 图像并取得检测结果，模型、预处理缓存和 RKNN 张量由检测器管理。当前仅支持随包的 80 类 COCO YOLOv5 布局，anchors 固定在 `apps/SmartIPC/modules/ai/src/postprocess.cpp`，没有运行时 anchors 配置文件。
+## 来源与致谢
 
-管理 HTTP 服务面向可信局域网，当前发行包未编译 TLS；跨不可信网络访问应使用受控 HTTPS 网关或 VPN。HTTP 登录不会自动为现有 RTSP 库添加流媒体鉴权，RTSP 访问控制应由网络策略或后续流服务适配实现。
-
-代码排版及静态检查使用固定规则，开发者可执行 `npm ci`、`npm run format:check` 和 `npm run check:web`。这些工具仅用于开发，不属于板端运行依赖；clang-format、Ruff 的安装与严格编译方式见 [代码规范](docs/coding_standards.md)。
-
-文档入口：[架构](docs/architecture.md)、[构建部署](docs/build_and_deploy.md)、[API](docs/api.md)、[电机协议](docs/motor_protocol.md)、[视频与截图](docs/video_and_snapshot.md)、[扩展指南](docs/extension_guide.md)、[代码规范](docs/coding_standards.md)、[验证记录](docs/validation.md)。
+本项目基于 **LuckfoxTECH 的 `luckfox_pico_rkmpi_example`** 整理和扩展，沿用 Rockchip MPI、RKNN、RTSP 等平台能力及原示例模型，并使用 OpenCV-Mobile、CivetWeb、Monocypher 和 nlohmann/json。各组件、模型和示例图片的来源见 [第三方说明](THIRD_PARTY_NOTICES.md)。

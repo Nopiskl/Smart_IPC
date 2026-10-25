@@ -19,7 +19,7 @@ def tool(name, variable):
             located = str(candidate)
     if not located:
         raise SystemExit(
-            f"Missing {name}; see docs/coding_standards.md ({variable} can override it)"
+            f"Missing {name}; see docs/build_and_deploy.md ({variable} can override it)"
         )
     return located
 

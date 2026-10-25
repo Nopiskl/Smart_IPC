@@ -5,6 +5,7 @@
 | 组件 | 来源与说明 |
 | --- | --- |
 | 基础示例与平台封装 | 本工作区 `Video_examples/luckfox_pico_rkmpi_example`；上游 LuckfoxTECH `luckfox_pico_rkmpi_example`，原平台封装署名 Luckfox team。重构后作为项目媒体模块使用 |
+| README 中的 YOLOv5 示例图片 | `docs/previews/luckfox_pico_rtsp_yolov5.jpg` 原样复制自 `Video_examples/luckfox_pico_rkmpi_example/images/luckfox_pico_rtsp_yolov5.jpg`，来源为 LuckfoxTECH 原示例，仅作检测效果展示；图中帧率不代表当前 SmartIPC 的实测性能 |
 | Rockchip MPI、RKAIQ、RKNN、RGA、RTSP、预编译库 | 原工程所附 Rockchip/Luckfox SDK 依赖；各头文件保留原始版权，二进制库与固件的使用条件以供应商发布内容为准 |
 | YOLOv5 模型加载及后处理 | 原示例中 Rockchip Electronics Co., Ltd. 2021/2023 代码；Apache-2.0 原始授权头保留，已修改生命周期、标签加载和 NMS 索引 |
 | RKNN 模型与 COCO 标签 | 原示例提供，位于 `models/yolov5`；未改变模型内容，模型及数据集使用条件以其原始发布为准 |

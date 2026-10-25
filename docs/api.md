@@ -79,4 +79,4 @@ while True:
 
 也可通过 `curl -b cookies.txt -H "X-CSRF-Token: <登录返回的令牌>" -H 'Content-Type: application/json' -X PUT -d '{"fps":20}' http://<设备IP>:8080/api/v1/video/config` 调用已登录会话。
 
-会话最多 4 个，创建后 30 分钟失效；重启不保留。登录失败有递增等待，最大 30 秒。凭据使用 Argon2id（8 MiB、3 轮、1 通道、128 位随机盐），适配嵌入式资源预算。HTTP 当前未启用 TLS，部署边界见 README。
+会话最多 4 个，创建后 30 分钟失效；重启不保留。登录失败有递增等待，最大 30 秒。凭据使用 Argon2id（8 MiB、3 轮、1 通道、128 位随机盐），适配嵌入式资源预算。HTTP 当前未启用 TLS，部署边界见 [部署访问](build_and_deploy.md#部署访问)。
